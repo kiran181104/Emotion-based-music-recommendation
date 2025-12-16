@@ -1,13 +1,14 @@
 /**
  * Spotify API Integration
- * Handles OAuth 2.0 authentication and API calls
+ * Handles OAuth 2.0 authentication with Authorization Code Flow + PKCE
+ * Note: Implicit Grant Flow was deprecated by Spotify on Nov 27, 2025
  */
 
 class SpotifyAPI {
     constructor() {
         // Replace with your Spotify Client ID
         // Get it from: https://developer.spotify.com/dashboard
-        // Note: Only Client ID is needed for Implicit Grant flow (no Client Secret required)
+        // Note: Using Authorization Code Flow with PKCE (Implicit Grant was deprecated Nov 27, 2025)
         this.clientId = '323e3dad1f684c829b2063e07ad5a0f3';
         
         // Redirect URI - must match EXACTLY what's in Spotify Dashboard
@@ -31,6 +32,10 @@ class SpotifyAPI {
         // Debug: Log redirect URI for troubleshooting
         console.log('Initialized Spotify API with redirect URI:', this.redirectUri);
         this.scope = 'user-read-private user-read-email';
+        
+        // PKCE code verifier and challenge
+        this.codeVerifier = this.getStoredCodeVerifier() || this.generateCodeVerifier();
+        this.storeCodeVerifier(this.codeVerifier);
         
         // Token storage
         this.accessToken = localStorage.getItem('spotify_access_token');
@@ -62,18 +67,59 @@ class SpotifyAPI {
     }
 
     /**
-     * Get authorization URL for OAuth 2.0
+     * Generate PKCE code verifier
      */
-    getAuthorizationUrl() {
+    generateCodeVerifier() {
+        const array = new Uint32Array(56 / 2);
+        crypto.getRandomValues(array);
+        return Array.from(array, dec => ('0' + dec.toString(16)).substr(-2)).join('');
+    }
+
+    /**
+     * Generate PKCE code challenge from verifier
+     */
+    async generateCodeChallenge(verifier) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(verifier);
+        const digest = await crypto.subtle.digest('SHA-256', data);
+        return btoa(String.fromCharCode.apply(null, [...new Uint8Array(digest)]))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+    }
+
+    /**
+     * Store code verifier in sessionStorage
+     */
+    storeCodeVerifier(verifier) {
+        sessionStorage.setItem('spotify_code_verifier', verifier);
+    }
+
+    /**
+     * Get stored code verifier
+     */
+    getStoredCodeVerifier() {
+        return sessionStorage.getItem('spotify_code_verifier');
+    }
+
+    /**
+     * Get authorization URL for OAuth 2.0 (Authorization Code Flow with PKCE)
+     */
+    async getAuthorizationUrl() {
         // Debug: Log the redirect URI being used
         console.log('Spotify OAuth Redirect URI:', this.redirectUri);
         console.log('Expected in Dashboard:', 'https://emotion-based-music-recommendation-theta.vercel.app/');
         
+        // Generate code challenge from verifier
+        const codeChallenge = await this.generateCodeChallenge(this.codeVerifier);
+        
         const params = new URLSearchParams({
             client_id: this.clientId,
-            response_type: 'token',
+            response_type: 'code',
             redirect_uri: this.redirectUri,
             scope: this.scope,
+            code_challenge_method: 'S256',
+            code_challenge: codeChallenge,
             show_dialog: 'false'
         });
         
@@ -91,16 +137,14 @@ class SpotifyAPI {
     }
 
     /**
-     * Handle OAuth callback and extract token from URL hash
+     * Handle OAuth callback and exchange authorization code for token (PKCE flow)
      * Returns: { success: boolean, error?: string }
      */
-    handleAuthCallback() {
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-        const accessToken = params.get('access_token');
-        const expiresIn = params.get('expires_in');
-        const error = params.get('error');
-        const errorDescription = params.get('error_description');
+    async handleAuthCallback() {
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get('code');
+        const error = searchParams.get('error');
+        const errorDescription = searchParams.get('error_description');
 
         // Check for errors first
         if (error) {
@@ -113,18 +157,92 @@ class SpotifyAPI {
             };
         }
 
-        if (accessToken) {
-            this.accessToken = accessToken;
+        // If we have a code, exchange it for a token
+        if (code) {
+            try {
+                const result = await this.exchangeCodeForToken(code);
+                if (result.success) {
+                    // Clean up URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    // Clear code verifier as it's no longer needed
+                    sessionStorage.removeItem('spotify_code_verifier');
+                    return { success: true };
+                } else {
+                    return result;
+                }
+            } catch (err) {
+                console.error('Token exchange error:', err);
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return { 
+                    success: false, 
+                    error: 'token_exchange_failed',
+                    errorDescription: 'Failed to exchange authorization code for token. Please try again.'
+                };
+            }
+        }
+        
+        return { success: false };
+    }
+
+    /**
+     * Exchange authorization code for access token (PKCE flow)
+     */
+    async exchangeCodeForToken(code) {
+        const codeVerifier = this.getStoredCodeVerifier();
+        if (!codeVerifier) {
+            return {
+                success: false,
+                error: 'missing_code_verifier',
+                errorDescription: 'Code verifier not found. Please try authenticating again.'
+            };
+        }
+
+        try {
+            const response = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    client_id: this.clientId,
+                    grant_type: 'authorization_code',
+                    code: code,
+                    redirect_uri: this.redirectUri,
+                    code_verifier: codeVerifier
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Token exchange error:', errorData);
+                return {
+                    success: false,
+                    error: errorData.error || 'token_exchange_failed',
+                    errorDescription: errorData.error_description || 'Failed to exchange code for token.'
+                };
+            }
+
+            const data = await response.json();
+            this.accessToken = data.access_token;
             // Store token with expiry time (subtract 60 seconds for safety margin)
-            this.tokenExpiry = Date.now() + (parseInt(expiresIn) - 60) * 1000;
-            localStorage.setItem('spotify_access_token', accessToken);
+            this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+            localStorage.setItem('spotify_access_token', data.access_token);
             localStorage.setItem('spotify_token_expiry', this.tokenExpiry.toString());
             
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // Store refresh token if provided (for future use)
+            if (data.refresh_token) {
+                localStorage.setItem('spotify_refresh_token', data.refresh_token);
+            }
+
             return { success: true };
+        } catch (error) {
+            console.error('Token exchange exception:', error);
+            return {
+                success: false,
+                error: 'network_error',
+                errorDescription: 'Network error during token exchange. Please check your connection and try again.'
+            };
         }
-        return { success: false };
     }
 
     /**
@@ -132,11 +250,14 @@ class SpotifyAPI {
      */
     getErrorMessage(error) {
         const errorMessages = {
-            'unsupported_response_type': 'OAuth configuration error. Please ensure your Spotify app is configured for Implicit Grant flow and the redirect URI matches exactly.',
+            'unsupported_response_type': 'OAuth configuration error. The app has been migrated to use Authorization Code Flow with PKCE. Please try again.',
             'access_denied': 'Authentication was cancelled or denied.',
             'invalid_client': 'Invalid Client ID. Please check your Spotify app configuration.',
             'invalid_request': 'Invalid request. Please try again.',
-            'server_error': 'Spotify server error. Please try again later.'
+            'server_error': 'Spotify server error. Please try again later.',
+            'token_exchange_failed': 'Failed to exchange authorization code for token. Please try again.',
+            'missing_code_verifier': 'Session expired. Please try authenticating again.',
+            'network_error': 'Network error. Please check your connection and try again.'
         };
         return errorMessages[error] || `Authentication error: ${error}`;
     }
@@ -144,8 +265,9 @@ class SpotifyAPI {
     /**
      * Initiate authentication flow
      */
-    authenticate() {
-        window.location.href = this.getAuthorizationUrl();
+    async authenticate() {
+        const authUrl = await this.getAuthorizationUrl();
+        window.location.href = authUrl;
     }
 
     /**

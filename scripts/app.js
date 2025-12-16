@@ -38,9 +38,9 @@ class MusicRecommendationApp {
     /**
      * Initialize the application
      */
-    init() {
-        // Handle Spotify OAuth callback
-        const authResult = this.spotifyAPI.handleAuthCallback();
+    async init() {
+        // Handle Spotify OAuth callback (now async for PKCE flow)
+        const authResult = await this.spotifyAPI.handleAuthCallback();
         if (authResult.success) {
             this.updateAuthStatus(true);
         } else {
