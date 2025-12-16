@@ -9,19 +9,27 @@ class SpotifyAPI {
         // Get it from: https://developer.spotify.com/dashboard
         // Note: Only Client ID is needed for Implicit Grant flow (no Client Secret required)
         this.clientId = '323e3dad1f684c829b2063e07ad5a0f3';
-        // Use current origin + pathname for redirect URI (works for both local and Vercel)
-        // Ensure it matches exactly what's configured in Spotify Dashboard
-        // For root path, ensure trailing slash is present to match dashboard settings
-        const baseUri = window.location.origin + window.location.pathname;
-        if (window.location.pathname === '/') {
-            // Root path should have trailing slash to match: https://emotion-based-music-recommendation-theta.vercel.app/
-            this.redirectUri = window.location.origin + '/';
-        } else if (!baseUri.endsWith('/')) {
-            // For subpaths, add trailing slash if missing
-            this.redirectUri = baseUri + '/';
+        
+        // Redirect URI - must match EXACTLY what's in Spotify Dashboard
+        // For production: https://emotion-based-music-recommendation-theta.vercel.app/
+        // The trailing slash is important - it must match your Spotify Dashboard settings exactly
+        const currentOrigin = window.location.origin;
+        const currentPathname = window.location.pathname;
+        
+        // Determine redirect URI based on current location
+        if (currentOrigin.includes('vercel.app')) {
+            // Production: Use exact Vercel URL with trailing slash
+            this.redirectUri = 'https://emotion-based-music-recommendation-theta.vercel.app/';
+        } else if (currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')) {
+            // Local development: Use current origin with trailing slash
+            this.redirectUri = currentOrigin + '/';
         } else {
-            this.redirectUri = baseUri;
+            // Fallback: Use current origin + pathname
+            this.redirectUri = currentOrigin + (currentPathname === '/' ? '/' : currentPathname + (currentPathname.endsWith('/') ? '' : '/'));
         }
+        
+        // Debug: Log redirect URI for troubleshooting
+        console.log('Initialized Spotify API with redirect URI:', this.redirectUri);
         this.scope = 'user-read-private user-read-email';
         
         // Token storage
@@ -57,6 +65,10 @@ class SpotifyAPI {
      * Get authorization URL for OAuth 2.0
      */
     getAuthorizationUrl() {
+        // Debug: Log the redirect URI being used
+        console.log('Spotify OAuth Redirect URI:', this.redirectUri);
+        console.log('Expected in Dashboard:', 'https://emotion-based-music-recommendation-theta.vercel.app/');
+        
         const params = new URLSearchParams({
             client_id: this.clientId,
             response_type: 'token',
@@ -64,7 +76,18 @@ class SpotifyAPI {
             scope: this.scope,
             show_dialog: 'false'
         });
-        return `https://accounts.spotify.com/authorize?${params.toString()}`;
+        
+        const authUrl = `https://accounts.spotify.com/authorize?${params.toString()}`;
+        console.log('Authorization URL:', authUrl);
+        
+        return authUrl;
+    }
+    
+    /**
+     * Get current redirect URI (for debugging)
+     */
+    getRedirectUri() {
+        return this.redirectUri;
     }
 
     /**
