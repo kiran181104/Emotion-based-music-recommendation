@@ -9,7 +9,12 @@ class SpotifyAPI {
         // Get it from: https://developer.spotify.com/dashboard
         // Note: Only Client ID is needed for Implicit Grant flow (no Client Secret required)
         this.clientId = '323e3dad1f684c829b2063e07ad5a0f3';
+        // Use current origin + pathname for redirect URI (works for both local and Vercel)
         this.redirectUri = window.location.origin + window.location.pathname;
+        // Remove trailing slash if present to match Spotify settings exactly
+        if (this.redirectUri.endsWith('/') && this.redirectUri !== window.location.origin + '/') {
+            this.redirectUri = this.redirectUri.slice(0, -1);
+        }
         this.scope = 'user-read-private user-read-email';
         
         // Token storage
@@ -57,12 +62,26 @@ class SpotifyAPI {
 
     /**
      * Handle OAuth callback and extract token from URL hash
+     * Returns: { success: boolean, error?: string }
      */
     handleAuthCallback() {
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         const accessToken = params.get('access_token');
         const expiresIn = params.get('expires_in');
+        const error = params.get('error');
+        const errorDescription = params.get('error_description');
+
+        // Check for errors first
+        if (error) {
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return { 
+                success: false, 
+                error: error,
+                errorDescription: errorDescription || this.getErrorMessage(error)
+            };
+        }
 
         if (accessToken) {
             this.accessToken = accessToken;
@@ -73,9 +92,23 @@ class SpotifyAPI {
             
             // Clean up URL
             window.history.replaceState({}, document.title, window.location.pathname);
-            return true;
+            return { success: true };
         }
-        return false;
+        return { success: false };
+    }
+
+    /**
+     * Get user-friendly error message
+     */
+    getErrorMessage(error) {
+        const errorMessages = {
+            'unsupported_response_type': 'OAuth configuration error. Please ensure your Spotify app is configured for Implicit Grant flow and the redirect URI matches exactly.',
+            'access_denied': 'Authentication was cancelled or denied.',
+            'invalid_client': 'Invalid Client ID. Please check your Spotify app configuration.',
+            'invalid_request': 'Invalid request. Please try again.',
+            'server_error': 'Spotify server error. Please try again later.'
+        };
+        return errorMessages[error] || `Authentication error: ${error}`;
     }
 
     /**

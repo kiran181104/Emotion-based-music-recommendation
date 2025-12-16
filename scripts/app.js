@@ -40,9 +40,13 @@ class MusicRecommendationApp {
      */
     init() {
         // Handle Spotify OAuth callback
-        if (this.spotifyAPI.handleAuthCallback()) {
+        const authResult = this.spotifyAPI.handleAuthCallback();
+        if (authResult.success) {
             this.updateAuthStatus(true);
         } else {
+            if (authResult.error) {
+                this.showError(authResult.errorDescription || authResult.error);
+            }
             this.updateAuthStatus(this.spotifyAPI.isAuthenticated());
         }
         

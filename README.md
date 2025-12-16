@@ -183,6 +183,20 @@ Edit the CSS variables in `styles/main.css`:
 - Check that your Client ID is correctly set in `spotify-api.js`
 - Verify the redirect URI matches in Spotify Dashboard
 
+### "unsupported_response_type" Error
+This error occurs when the Spotify app configuration doesn't match. To fix:
+
+1. **Go to Spotify Dashboard**: https://developer.spotify.com/dashboard
+2. **Click on your app** → **Settings**
+3. **Check Redirect URIs**: 
+   - For local development: Add `http://localhost` or `http://localhost:8000`
+   - For Vercel deployment: Add your exact Vercel URL (e.g., `https://emotion-based-music-recommendation-theta.vercel.app`)
+   - **Important**: The URI must match EXACTLY (including trailing slash or lack thereof)
+4. **Save changes**
+5. **Try authenticating again**
+
+**Note**: Make sure you're using Implicit Grant flow (response_type=token), not Authorization Code flow.
+
 ### Audio Not Playing
 - Some tracks don't have preview URLs available
 - Check browser console for errors
