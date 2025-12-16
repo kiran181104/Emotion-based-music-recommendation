@@ -10,10 +10,17 @@ class SpotifyAPI {
         // Note: Only Client ID is needed for Implicit Grant flow (no Client Secret required)
         this.clientId = '323e3dad1f684c829b2063e07ad5a0f3';
         // Use current origin + pathname for redirect URI (works for both local and Vercel)
-        this.redirectUri = window.location.origin + window.location.pathname;
-        // Remove trailing slash if present to match Spotify settings exactly
-        if (this.redirectUri.endsWith('/') && this.redirectUri !== window.location.origin + '/') {
-            this.redirectUri = this.redirectUri.slice(0, -1);
+        // Ensure it matches exactly what's configured in Spotify Dashboard
+        // For root path, ensure trailing slash is present to match dashboard settings
+        const baseUri = window.location.origin + window.location.pathname;
+        if (window.location.pathname === '/') {
+            // Root path should have trailing slash to match: https://emotion-based-music-recommendation-theta.vercel.app/
+            this.redirectUri = window.location.origin + '/';
+        } else if (!baseUri.endsWith('/')) {
+            // For subpaths, add trailing slash if missing
+            this.redirectUri = baseUri + '/';
+        } else {
+            this.redirectUri = baseUri;
         }
         this.scope = 'user-read-private user-read-email';
         
