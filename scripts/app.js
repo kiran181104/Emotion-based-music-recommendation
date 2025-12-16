@@ -204,7 +204,7 @@ class MusicRecommendationApp {
     }
 
     /**
-     * Create track element
+     * Create track element (CSP-safe, using DOM API instead of innerHTML)
      */
     createTrackElement(track, index) {
         const item = document.createElement('div');
@@ -213,28 +213,58 @@ class MusicRecommendationApp {
         
         const hasPreview = !!track.previewUrl;
         
-        item.innerHTML = `
-            <div class="album-cover-container">
-                <img src="${track.albumArt}" alt="${track.album}" class="album-cover" loading="lazy">
-                ${hasPreview ? `
-                    <div class="play-button-overlay">
-                        <div class="play-icon"></div>
-                    </div>
-                ` : ''}
-            </div>
-            <div class="track-info">
-                <div class="track-name" title="${track.name}">${track.name}</div>
-                <div class="artist-name" title="${track.artist}">${track.artist}</div>
-            </div>
-        `;
+        // Create album cover container
+        const albumCoverContainer = document.createElement('div');
+        albumCoverContainer.className = 'album-cover-container';
         
+        // Create album cover image
+        const albumCover = document.createElement('img');
+        albumCover.src = track.albumArt;
+        albumCover.alt = track.album;
+        albumCover.className = 'album-cover';
+        albumCover.loading = 'lazy';
+        albumCoverContainer.appendChild(albumCover);
+        
+        // Create play button overlay if preview is available
         if (hasPreview) {
-            const playButton = item.querySelector('.play-button-overlay');
-            playButton.addEventListener('click', (e) => {
+            const playButtonOverlay = document.createElement('div');
+            playButtonOverlay.className = 'play-button-overlay';
+            
+            const playIcon = document.createElement('div');
+            playIcon.className = 'play-icon';
+            playButtonOverlay.appendChild(playIcon);
+            
+            playButtonOverlay.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.toggleTrack(track);
             });
-        } else {
+            
+            albumCoverContainer.appendChild(playButtonOverlay);
+        }
+        
+        item.appendChild(albumCoverContainer);
+        
+        // Create track info container
+        const trackInfo = document.createElement('div');
+        trackInfo.className = 'track-info';
+        
+        // Create track name
+        const trackName = document.createElement('div');
+        trackName.className = 'track-name';
+        trackName.title = track.name;
+        trackName.textContent = track.name;
+        trackInfo.appendChild(trackName);
+        
+        // Create artist name
+        const artistName = document.createElement('div');
+        artistName.className = 'artist-name';
+        artistName.title = track.artist;
+        artistName.textContent = track.artist;
+        trackInfo.appendChild(artistName);
+        
+        item.appendChild(trackInfo);
+        
+        if (!hasPreview) {
             item.style.opacity = '0.6';
             item.title = 'Preview not available';
         }
