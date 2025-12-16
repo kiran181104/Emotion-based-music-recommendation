@@ -322,15 +322,73 @@ class SpotifyAPI {
     }
 
     /**
-     * Search for tracks based on emotion
+     * Search for tracks based on emotion with language priority
+     * Priority: Tamil, Telugu, English, Malayalam
      */
     async searchByEmotion(emotion, limit = 20) {
-        const query = this.emotionQueries[emotion] || emotion;
-        const endpoint = `/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}&market=US`;
+        const baseQuery = this.emotionQueries[emotion] || emotion;
+        // Remove language prefix from base query
+        const emotionKeywords = baseQuery.replace(/\(tamil OR telugu OR malayalam\)/i, '').trim();
+        
+        // Try to get songs in priority languages: Tamil, Telugu, English, Malayalam
+        // Split the limit across languages for better diversity
+        const tracksPerLanguage = Math.ceil(limit / 4);
+        const allTracks = [];
+        const seenTrackIds = new Set();
+        
+        // Search order: Tamil, Telugu, English, Malayalam
+        const languages = [
+            { name: 'tamil', query: `tamil ${emotionKeywords}` },
+            { name: 'telugu', query: `telugu ${emotionKeywords}` },
+            { name: 'english', query: emotionKeywords },
+            { name: 'malayalam', query: `malayalam ${emotionKeywords}` }
+        ];
         
         try {
-            const data = await this.apiRequest(endpoint);
-            return this.formatTrackResults(data.tracks.items);
+            // Search each language
+            for (const lang of languages) {
+                if (allTracks.length >= limit) break;
+                
+                const endpoint = `/search?q=${encodeURIComponent(lang.query)}&type=track&limit=${tracksPerLanguage}&market=IN`;
+                
+                try {
+                    const data = await this.apiRequest(endpoint);
+                    const tracks = this.formatTrackResults(data.tracks.items);
+                    
+                    // Add tracks that haven't been seen yet
+                    for (const track of tracks) {
+                        if (!seenTrackIds.has(track.id) && allTracks.length < limit) {
+                            seenTrackIds.add(track.id);
+                            allTracks.push(track);
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`Search error for ${lang.name}:`, error);
+                    // Continue with next language if one fails
+                }
+            }
+            
+            // If we don't have enough tracks, do a general search without language filter
+            if (allTracks.length < limit) {
+                const remainingLimit = limit - allTracks.length;
+                const endpoint = `/search?q=${encodeURIComponent(emotionKeywords)}&type=track&limit=${remainingLimit * 2}&market=IN`;
+                
+                try {
+                    const data = await this.apiRequest(endpoint);
+                    const tracks = this.formatTrackResults(data.tracks.items);
+                    
+                    for (const track of tracks) {
+                        if (!seenTrackIds.has(track.id) && allTracks.length < limit) {
+                            seenTrackIds.add(track.id);
+                            allTracks.push(track);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('General search error:', error);
+                }
+            }
+            
+            return allTracks.slice(0, limit);
         } catch (error) {
             console.error('Search error:', error);
             throw error;
