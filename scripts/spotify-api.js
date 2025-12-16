@@ -41,16 +41,16 @@ class SpotifyAPI {
         this.accessToken = localStorage.getItem('spotify_access_token');
         this.tokenExpiry = localStorage.getItem('spotify_token_expiry');
         
-        // Emotion to search query mapping
+        // Emotion to search query mapping with language priority: Tamil, Telugu, English, Malayalam
         this.emotionQueries = {
-            happy: 'upbeat pop dance party',
-            sad: 'melancholic indie acoustic',
-            chill: 'lo-fi hip hop ambient',
-            energetic: 'high energy workout rock',
-            romantic: 'romantic love ballad',
-            calm: 'peaceful meditation yoga',
-            angry: 'aggressive metal rock',
-            nostalgic: 'vintage retro classic'
+            happy: '(tamil OR telugu OR malayalam) upbeat pop dance party',
+            sad: '(tamil OR telugu OR malayalam) melancholic indie acoustic',
+            chill: '(tamil OR telugu OR malayalam) lo-fi hip hop ambient',
+            energetic: '(tamil OR telugu OR malayalam) high energy workout rock',
+            romantic: '(tamil OR telugu OR malayalam) romantic love ballad',
+            calm: '(tamil OR telugu OR malayalam) peaceful meditation yoga',
+            angry: '(tamil OR telugu OR malayalam) aggressive metal rock',
+            nostalgic: '(tamil OR telugu OR malayalam) vintage retro classic'
         };
     }
 
