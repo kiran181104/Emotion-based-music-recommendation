@@ -1,0 +1,179 @@
+/* ============================================
+   Responsive Design - Mobile First
+   ============================================ */
+
+/* Mobile Devices (< 768px) */
+@media (max-width: 767px) {
+    .main-content {
+        padding: var(--spacing-md) var(--spacing-sm);
+    }
+
+    .header-title {
+        font-size: 2rem;
+    }
+
+    .header-subtitle {
+        font-size: 1rem;
+    }
+
+    .emotion-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-sm);
+        max-width: 100%;
+    }
+
+    .emotion-card {
+        padding: var(--spacing-md);
+    }
+
+    .emotion-emoji {
+        font-size: 2.5rem;
+    }
+
+    .emotion-label {
+        font-size: 0.9rem;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+    }
+
+    .playlist-title {
+        font-size: 1.5rem;
+    }
+
+    .playlist-container {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+
+    .visualizer-section {
+        height: 150px;
+    }
+
+    .auth-button {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.9rem;
+    }
+}
+
+/* Tablet Devices (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .emotion-grid {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 100%;
+    }
+
+    .playlist-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .visualizer-section {
+        height: 180px;
+    }
+}
+
+/* Desktop Devices (> 1024px) */
+@media (min-width: 1025px) {
+    .emotion-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--spacing-lg);
+    }
+
+    .playlist-container {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+
+    .visualizer-section {
+        height: 200px;
+    }
+}
+
+/* Large Desktop (> 1400px) */
+@media (min-width: 1400px) {
+    .emotion-grid {
+        grid-template-columns: repeat(4, 1fr);
+        max-width: 900px;
+    }
+
+    .playlist-container {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+    }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .emotion-card:hover {
+        transform: none;
+    }
+
+    .emotion-card:active {
+        transform: scale(0.95);
+    }
+
+    .playlist-item:hover {
+        transform: none;
+    }
+
+    .playlist-item:active {
+        transform: scale(0.98);
+    }
+
+    /* Larger touch targets */
+    .emotion-card {
+        min-height: 120px;
+    }
+
+    .play-button-overlay {
+        width: 70px;
+        height: 70px;
+    }
+
+    .auth-button {
+        min-height: 44px;
+        min-width: 120px;
+    }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .album-cover {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Landscape Mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+    .header {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .header-title {
+        font-size: 1.5rem;
+    }
+
+    .emotion-section {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .visualizer-section {
+        height: 120px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .emotion-canvas,
+    .visualizer-section,
+    .auth-section {
+        display: none;
+    }
+
+    .app-container {
+        background: white;
+        color: black;
+    }
+}
+

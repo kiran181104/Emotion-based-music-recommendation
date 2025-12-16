@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion-Based Music Recommendation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/animations.css">
+    <link rel="stylesheet" href="styles/responsive.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Background Effects Canvas -->
+        <canvas id="emotion-canvas" class="emotion-canvas"></canvas>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 class="header-title">🎵 Emotion-Based Music</h1>
+                <p class="header-subtitle">Select your mood and discover your perfect soundtrack</p>
+            </header>
+
+            <!-- Emotion Selector -->
+            <section class="emotion-section">
+                <h2 class="section-title">How are you feeling?</h2>
+                <div class="emotion-grid" id="emotion-grid">
+                    <div class="emotion-card" data-emotion="happy">
+                        <div class="emotion-emoji">😄</div>
+                        <div class="emotion-label">Happy</div>
+                    </div>
+                    <div class="emotion-card" data-emotion="sad">
+                        <div class="emotion-emoji">😢</div>
+                        <div class="emotion-label">Sad</div>
+                    </div>
+                    <div class="emotion-card" data-emotion="chill">
+                        <div class="emotion-emoji">😎</div>
+                        <div class="emotion-label">Chill</div>
+                    </div>
+                    <div class="emotion-card" data-emotion="energetic">
+                        <div class="emotion-emoji">🔥</div>
+                        <div class="emotion-label">Energetic</div>
+                    </div>
+                    <div class="emotion-card" data-emotion="romantic">
+                        <div class="emotion-emoji">💕</div>
+                        <div class="emotion-label">Romantic</div>
+                    </div>
+                    <div class="emotion-card" data-emotion="calm">
+                        <div class="emotion-emoji">🧘</div>
+                        <div class="emotion-label">Calm</div>
+                    </div>
+                    <div class="emotion-card" data-emotion="angry">
+                        <div class="emotion-emoji">😠</div>
+                        <div class="emotion-label">Angry</div>
+                    </div>
+                    <div class="emotion-card" data-emotion="nostalgic">
+                        <div class="emotion-emoji">🌙</div>
+                        <div class="emotion-label">Nostalgic</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Audio Visualizer -->
+            <section class="visualizer-section" id="visualizer-section">
+                <canvas id="visualizer-canvas" class="visualizer-canvas"></canvas>
+            </section>
+
+            <!-- Playlist Display -->
+            <section class="playlist-section" id="playlist-section">
+                <div class="playlist-header">
+                    <h2 class="playlist-title" id="playlist-title">Select an emotion to discover music</h2>
+                    <div class="playlist-loading" id="playlist-loading" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <span>Loading your perfect playlist...</span>
+                    </div>
+                </div>
+                <div class="playlist-container" id="playlist-container">
+                    <!-- Playlist items will be dynamically inserted here -->
+                </div>
+                <div class="error-message" id="error-message" style="display: none;"></div>
+            </section>
+
+            <!-- Spotify Auth Button -->
+            <div class="auth-section">
+                <button class="auth-button" id="auth-button">Connect to Spotify</button>
+                <div class="auth-status" id="auth-status"></div>
+            </div>
+        </div>
+
+        <!-- Hidden Audio Player -->
+        <audio id="audio-player" preload="auto"></audio>
+    </div>
+
+    <script src="scripts/spotify-api.js"></script>
+    <script src="scripts/emotion-effects.js"></script>
+    <script src="scripts/visualizer.js"></script>
+    <script src="scripts/app.js"></script>
+</body>
+</html>
+
