@@ -263,11 +263,6 @@ class MusicRecommendationApp {
         
         item.appendChild(trackInfo);
         
-        if (!hasPreview) {
-            item.style.opacity = '0.6';
-            item.title = 'Preview not available';
-        }
-        
         return item;
     }
 
