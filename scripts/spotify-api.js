@@ -47,16 +47,16 @@ class SpotifyAPI {
         this.accessToken = localStorage.getItem('spotify_access_token');
         this.tokenExpiry = localStorage.getItem('spotify_token_expiry');
         
-        // Emotion to search query mapping - Tamil songs only
+        // Emotion to search query mapping - Tamil songs only with specific keywords
         this.emotionQueries = {
-            happy: 'tamil upbeat pop dance party',
-            sad: 'tamil melancholic indie acoustic',
-            chill: 'tamil lo-fi hip hop ambient',
-            energetic: 'tamil high energy workout rock',
-            romantic: 'tamil romantic love ballad',
-            calm: 'tamil peaceful meditation yoga',
-            angry: 'tamil aggressive metal rock',
-            nostalgic: 'tamil vintage retro classic'
+            happy: 'tamil happy joyful celebration party dance',
+            sad: 'tamil sad emotional heartbreak tears lonely',
+            chill: 'tamil chill relaxed calm peaceful mellow',
+            energetic: 'tamil energetic workout pump up motivation',
+            romantic: 'tamil love romantic couple wedding',
+            calm: 'tamil meditation peaceful relaxation yoga',
+            angry: 'tamil angry frustration rage intense',
+            nostalgic: 'tamil old songs classic vintage memories'
         };
     }
 
@@ -343,59 +343,86 @@ class SpotifyAPI {
     }
 
     /**
-     * Search for tracks based on emotion - Tamil songs prioritized
+     * Search for tracks based on emotion - Tamil songs only
      */
     async searchByEmotion(emotion, limit = 20) {
         const baseQuery = this.emotionQueries[emotion] || `tamil ${emotion}`;
 
+        // Emotion-specific Tamil artist searches
+        const emotionArtists = {
+            happy: ['anirudh ravichander', 'gv prakash', 'sundar c', 'dhanush'],
+            sad: ['ar rahman', 'ilayaraja', 'yuvan shankar raja', 'sundar c'],
+            chill: ['anirudh ravichander', 'gv prakash', 'yuvan shankar raja'],
+            energetic: ['anirudh ravichander', 'gv prakash', 'dhanush', 'sundar c'],
+            romantic: ['ar rahman', 'ilayaraja', 'yuvan shankar raja', 'sundar c'],
+            calm: ['ar rahman', 'ilayaraja', 'yuvan shankar raja'],
+            angry: ['anirudh ravichander', 'gv prakash', 'dhanush'],
+            nostalgic: ['ilayaraja', 'ar rahman', 'sundar c', 'yuvan shankar raja']
+        };
+
         try {
-            // First try with Tamil-specific search
-            const tamilEndpoint = `/search?q=${encodeURIComponent(baseQuery)}&type=track&limit=${limit}&market=IN`;
-            const tamilData = await this.apiRequest(tamilEndpoint);
-            const tamilTracks = this.formatTrackResults(tamilData.tracks.items);
+            const allTracks = [];
+            const seenIds = new Set();
 
-            // Also search for popular Tamil artists and songs
-            const popularTamilQueries = [
-                'anirudh ravichander',
-                'ar rahman',
-                'ilayaraja',
-                'yuvan shankar raja',
-                'gv prakash',
-                'dhanush',
-                'sundar c',
-                'tamil hits',
-                'tamil music'
-            ];
+            // Search with emotion-specific query
+            const emotionEndpoint = `/search?q=${encodeURIComponent(baseQuery)}&type=track&limit=${Math.ceil(limit * 0.6)}&market=IN`;
+            const emotionData = await this.apiRequest(emotionEndpoint);
+            const emotionTracks = this.formatTrackResults(emotionData.tracks.items);
 
-            const additionalTracks = [];
-            for (const query of popularTamilQueries.slice(0, 3)) { // Limit to 3 additional searches
-                try {
-                    const endpoint = `/search?q=${encodeURIComponent(query + ' ' + emotion.split(' ')[1])}&type=track&limit=5&market=IN`;
-                    const data = await this.apiRequest(endpoint);
-                    const tracks = this.formatTrackResults(data.tracks.items);
-                    additionalTracks.push(...tracks);
-                } catch (error) {
-                    console.warn(`Additional search failed for ${query}:`, error);
+            // Filter for Tamil songs only
+            const tamilEmotionTracks = emotionTracks.filter(track => this.isTamilSong(track));
+            for (const track of tamilEmotionTracks) {
+                if (!seenIds.has(track.id) && allTracks.length < limit) {
+                    seenIds.add(track.id);
+                    allTracks.push(track);
                 }
             }
 
-            // Combine and deduplicate tracks
-            const allTracks = [...tamilTracks, ...additionalTracks];
-            const seenIds = new Set();
-            const uniqueTracks = allTracks.filter(track => {
-                if (seenIds.has(track.id)) return false;
-                seenIds.add(track.id);
-                return true;
-            });
+            // Search emotion-specific Tamil artists
+            const artists = emotionArtists[emotion] || ['anirudh ravichander', 'ar rahman', 'ilayaraja'];
+            for (const artist of artists.slice(0, 3)) { // Limit to 3 artists per emotion
+                if (allTracks.length >= limit) break;
 
-            // Prioritize tracks that are more likely to be Tamil
-            const prioritizedTracks = uniqueTracks.sort((a, b) => {
-                const aScore = this.getTamilScore(a);
-                const bScore = this.getTamilScore(b);
-                return bScore - aScore;
-            });
+                try {
+                    const artistQuery = `${artist} tamil`;
+                    const artistEndpoint = `/search?q=${encodeURIComponent(artistQuery)}&type=track&limit=8&market=IN`;
+                    const artistData = await this.apiRequest(artistEndpoint);
+                    const artistTracks = this.formatTrackResults(artistData.tracks.items);
 
-            return prioritizedTracks.slice(0, limit);
+                    // Filter for Tamil songs and add to results
+                    for (const track of artistTracks) {
+                        if (this.isTamilSong(track) && !seenIds.has(track.id) && allTracks.length < limit) {
+                            seenIds.add(track.id);
+                            allTracks.push(track);
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`Artist search failed for ${artist}:`, error);
+                }
+            }
+
+            // If we still don't have enough tracks, do a broader Tamil search
+            if (allTracks.length < limit) {
+                const remainingLimit = limit - allTracks.length;
+                const broadQuery = `tamil ${emotion} songs`;
+                const broadEndpoint = `/search?q=${encodeURIComponent(broadQuery)}&type=track&limit=${remainingLimit * 2}&market=IN`;
+
+                try {
+                    const broadData = await this.apiRequest(broadEndpoint);
+                    const broadTracks = this.formatTrackResults(broadData.tracks.items);
+
+                    for (const track of broadTracks) {
+                        if (this.isTamilSong(track) && !seenIds.has(track.id) && allTracks.length < limit) {
+                            seenIds.add(track.id);
+                            allTracks.push(track);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Broad Tamil search failed:', error);
+                }
+            }
+
+            return allTracks;
         } catch (error) {
             console.error('Search error:', error);
             throw error;
@@ -403,45 +430,42 @@ class SpotifyAPI {
     }
 
     /**
-     * Get a score indicating how likely a track is Tamil (0-10)
+     * Check if a track is likely Tamil
      */
-    getTamilScore(track) {
-        let score = 0;
+    isTamilSong(track) {
         const text = (track.name + ' ' + track.artist + ' ' + track.album).toLowerCase();
 
-        // High priority indicators
-        if (text.includes('tamil') || text.includes('தமிழ்')) score += 5;
-        if (text.includes('anirudh') || text.includes('அனிருத்')) score += 4;
-        if (text.includes('ar rahman') || text.includes('அர. ரஹ்மான்')) score += 4;
-        if (text.includes('ilayaraja') || text.includes('இளையராஜா')) score += 4;
-        if (text.includes('yuvan')) score += 3;
-        if (text.includes('gv prakash')) score += 3;
-
-        // Medium priority indicators
-        if (text.includes('hindi') || text.includes('இந்தி')) score += 2;
-        if (text.includes('telugu') || text.includes('தெலுங்கு')) score += 2;
-        if (text.includes('malayalam') || text.includes('மலையாளம்')) score += 2;
-
-        // Language script detection (basic)
-        if (/[\u0B80-\u0BFF]/.test(track.name)) score += 3; // Tamil script
-
-        return Math.min(score, 10);
-    }
-
-    /**
-     * Check if text is likely Tamil (basic heuristic)
-     */
-    isLikelyTamil(text) {
-        // Common Tamil words and patterns
-        const tamilIndicators = [
-            'தமிழ்', 'tamil', 'இந்தி', 'hindi', 'கன்னட', 'kannada', 
-            'தெலுங்கு', 'telugu', 'மலையாளம்', 'malayalam',
-            'அரிஜித்', 'arijit', 'அனிருத்', 'anirudh', 'இளையராஜா', 'ilayaraja',
-            'கே.எஸ். சித்ரா', 'k.s.chitra', 'எஸ்.பி.பி', 'spb', 'தி.எம்.எஸ்', 'tms'
+        // Strong Tamil indicators
+        const strongIndicators = [
+            'tamil', 'தமிழ்', 'anirudh', 'அனிருத்', 'ar rahman', 'அர. ரஹ்மான்',
+            'ilayaraja', 'இளையராஜா', 'yuvan', 'gv prakash', 'dhanush', 'sundar c',
+            'sundar.c', 'karthik', 'shreya ghoshal', 'k.s.chitra', 'எஸ்.பி.பி',
+            'spb', 't.m.s', 'tms', 's.janaki', 'minmini'
         ];
-        
-        const lowerText = text.toLowerCase();
-        return tamilIndicators.some(indicator => lowerText.includes(indicator.toLowerCase()));
+
+        // Check for strong indicators
+        if (strongIndicators.some(indicator => text.includes(indicator))) {
+            return true;
+        }
+
+        // Check for Tamil script characters
+        if (/[\u0B80-\u0BFF]/.test(track.name) || /[\u0B80-\u0BFF]/.test(track.artist)) {
+            return true;
+        }
+
+        // Medium indicators (album names, etc.)
+        const mediumIndicators = [
+            'kollywood', 'tamil movie', 'tamil film', 'south indian',
+            'indian tamil', 'tamil hit', 'tamil song'
+        ];
+
+        if (mediumIndicators.some(indicator => text.includes(indicator))) {
+            return true;
+        }
+
+        // For tracks that might be Tamil but don't have explicit indicators,
+        // check if they appear in Tamil artist searches
+        return false;
     }
 
     /**
