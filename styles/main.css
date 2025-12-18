@@ -353,11 +353,19 @@ body {
 }
 
 .playlist-item.playing {
-    border-color: #667eea;
+    border-color: var(--color-chill-solid);
     box-shadow: 
         8px 8px 16px rgba(0, 0, 0, 0.3),
         -8px -8px 16px rgba(255, 255, 255, 0.05),
-        0 0 20px rgba(102, 126, 234, 0.5);
+        0 0 20px rgba(67, 233, 123, 0.5);
+}
+
+.playlist-item.paused {
+    border-color: var(--color-calm-solid);
+    box-shadow: 
+        8px 8px 16px rgba(0, 0, 0, 0.3),
+        -8px -8px 16px rgba(255, 255, 255, 0.05),
+        0 0 20px rgba(168, 237, 234, 0.5);
 }
 
 .album-cover-container {
@@ -384,60 +392,56 @@ body {
     transform: scale(1.05);
 }
 
-.play-button-overlay {
+.controls-overlay {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
-    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.playlist-item:hover .controls-overlay {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+.control-button {
+    width: 40px;
+    height: 40px;
+    border: none;
     border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transition: all 0.3s ease;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    font-size: 16px;
+}
+
+.control-button:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
     box-shadow: var(--shadow-md);
 }
 
-.playlist-item:hover .play-button-overlay {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.1);
+.control-button.playing {
+    background: var(--color-chill-solid);
+    color: white;
 }
 
-.play-icon {
-    width: 0;
-    height: 0;
-    border-left: 20px solid var(--bg-primary);
-    border-top: 12px solid transparent;
-    border-bottom: 12px solid transparent;
-    margin-left: 4px;
+.control-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
 }
 
-.play-icon.paused {
-    width: 20px;
-    height: 20px;
-    border: none;
-    background: var(--bg-primary);
-    position: relative;
-}
-
-.play-icon.paused::before,
-.play-icon.paused::after {
-    content: '';
-    position: absolute;
-    width: 6px;
-    height: 20px;
-    background: var(--bg-primary);
-}
-
-.play-icon.paused::before {
-    left: 4px;
-}
-
-.play-icon.paused::after {
-    right: 4px;
+.stop-button:disabled {
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .track-info {
@@ -519,5 +523,81 @@ body {
     margin-top: var(--spacing-sm);
     font-size: 0.9rem;
     color: var(--text-secondary);
+}
+
+/* ============================================
+   Spotify Player Section
+   ============================================ */
+.spotify-player-section {
+    display: none;
+    margin: var(--spacing-xl) 0;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s ease;
+}
+
+.spotify-player-section.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.spotify-player-container {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        8px 8px 16px rgba(0, 0, 0, 0.3),
+        -8px -8px 16px rgba(255, 255, 255, 0.05);
+}
+
+.spotify-player-title {
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+}
+
+.spotify-embed-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 352px;
+}
+
+.spotify-embed-container iframe {
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+}
+
+/* ============================================
+   Spotify Overlay on Album Covers
+   ============================================ */
+.spotify-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(29, 185, 84, 0.9);
+    color: white;
+    padding: 8px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.album-cover-container:hover .spotify-overlay {
+    opacity: 1;
+}
+
+.playlist-item.playing .spotify-overlay {
+    background: rgba(29, 185, 84, 1);
+    opacity: 1;
 }
 

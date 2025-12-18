@@ -97,20 +97,20 @@ class MusicRecommendationApp {
         audio.addEventListener('play', () => {
             this.isPlaying = true;
             this.audioVisualizer.start();
-            this.updatePlayButtonStates();
+            this.updateControlButtonStates();
         });
         
         audio.addEventListener('pause', () => {
             this.isPlaying = false;
             this.audioVisualizer.stop();
-            this.updatePlayButtonStates();
+            this.updateControlButtonStates();
         });
         
         audio.addEventListener('ended', () => {
             this.isPlaying = false;
             this.currentlyPlayingTrack = null;
             this.audioVisualizer.stop();
-            this.updatePlayButtonStates();
+            this.updateControlButtonStates();
         });
         
         audio.addEventListener('error', (e) => {
@@ -118,7 +118,7 @@ class MusicRecommendationApp {
             this.showError('Unable to play this track preview.');
             this.isPlaying = false;
             this.currentlyPlayingTrack = null;
-            this.updatePlayButtonStates();
+            this.updateControlButtonStates();
         });
     }
 
@@ -210,38 +210,37 @@ class MusicRecommendationApp {
         const item = document.createElement('div');
         item.className = 'playlist-item';
         item.style.animationDelay = `${index * 0.1}s`;
-        
-        const hasPreview = !!track.previewUrl;
-        
+
         // Create album cover container
         const albumCoverContainer = document.createElement('div');
         albumCoverContainer.className = 'album-cover-container';
-        
+
         // Create album cover image
         const albumCover = document.createElement('img');
         albumCover.src = track.albumArt;
         albumCover.alt = track.album;
         albumCover.className = 'album-cover';
         albumCover.loading = 'lazy';
+
+        // Make album cover clickable to play on Spotify
+        albumCover.style.cursor = 'pointer';
+        albumCover.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.playOnSpotify(track);
+        });
+
         albumCoverContainer.appendChild(albumCover);
-        
-        // Create play button overlay if preview is available
-        if (hasPreview) {
-            const playButtonOverlay = document.createElement('div');
-            playButtonOverlay.className = 'play-button-overlay';
-            
-            const playIcon = document.createElement('div');
-            playIcon.className = 'play-icon';
-            playButtonOverlay.appendChild(playIcon);
-            
-            playButtonOverlay.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleTrack(track);
-            });
-            
-            albumCoverContainer.appendChild(playButtonOverlay);
-        }
-        
+
+        // Create Spotify play overlay
+        const spotifyOverlay = document.createElement('div');
+        spotifyOverlay.className = 'spotify-overlay';
+        spotifyOverlay.innerHTML = '▶️ Play on Spotify';
+        spotifyOverlay.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.playOnSpotify(track);
+        });
+        albumCoverContainer.appendChild(spotifyOverlay);
+
         item.appendChild(albumCoverContainer);
         
         // Create track info container
@@ -273,60 +272,194 @@ class MusicRecommendationApp {
     }
 
     /**
-     * Toggle track playback
+     * Play track on Spotify using embedded player
      */
-    toggleTrack(track) {
+    playOnSpotify(track) {
+        // Update currently playing track
+        this.currentlyPlayingTrack = track;
+
+        // Create or update Spotify embed
+        this.showSpotifyPlayer(track);
+
+        // Update UI to show playing state
+        this.updateControlButtonStates();
+    }
+
+    /**
+     * Show Spotify embedded player
+     */
+    showSpotifyPlayer(track) {
+        const playerSection = document.getElementById('spotify-player-section');
+        if (!playerSection) {
+            // Create player section if it doesn't exist
+            const section = document.createElement('section');
+            section.id = 'spotify-player-section';
+            section.className = 'spotify-player-section active';
+
+            const container = document.createElement('div');
+            container.className = 'spotify-player-container';
+
+            const title = document.createElement('h3');
+            title.className = 'spotify-player-title';
+            title.textContent = `Now Playing: ${track.name} by ${track.artist}`;
+
+            const embedContainer = document.createElement('div');
+            embedContainer.id = 'spotify-embed-container';
+            embedContainer.className = 'spotify-embed-container';
+
+            container.appendChild(title);
+            container.appendChild(embedContainer);
+            section.appendChild(container);
+
+            // Insert after visualizer section
+            const visualizerSection = document.getElementById('visualizer-section');
+            visualizerSection.parentNode.insertBefore(section, visualizerSection.nextSibling);
+        } else {
+            // Update existing player
+            playerSection.classList.add('active');
+            const title = playerSection.querySelector('.spotify-player-title');
+            title.textContent = `Now Playing: ${track.name} by ${track.artist}`;
+
+            const embedContainer = playerSection.querySelector('#spotify-embed-container');
+            embedContainer.innerHTML = ''; // Clear previous embed
+        }
+
+        // Create Spotify embed iframe
+        this.createSpotifyEmbed(track);
+    }
+
+    /**
+     * Create Spotify embed iframe
+     */
+    createSpotifyEmbed(track) {
+        const embedContainer = document.getElementById('spotify-embed-container');
+        if (!embedContainer) return;
+
+        // Create iframe for Spotify embed
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://open.spotify.com/embed/track/${track.id}?utm_source=generator&theme=0`;
+        iframe.width = '100%';
+        iframe.height = '352';
+        iframe.frameBorder = '0';
+        iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+        iframe.loading = 'lazy';
+
+        embedContainer.appendChild(iframe);
+    }
+
+    /**
+     * Toggle play/pause for a track
+     */
+    togglePlayPause(track) {
         const audio = this.elements.audioPlayer;
         
-        if (this.currentlyPlayingTrack?.id === track.id && this.isPlaying) {
-            // Pause current track
-            audio.pause();
-            this.currentlyPlayingTrack = null;
-        } else {
-            // Play new track or resume
-            if (this.currentlyPlayingTrack?.id !== track.id) {
-                audio.src = track.previewUrl;
-                this.currentlyPlayingTrack = track;
+        if (this.currentlyPlayingTrack?.id === track.id) {
+            // Same track - toggle play/pause
+            if (this.isPlaying) {
+                audio.pause();
+            } else {
+                audio.play().catch(error => {
+                    console.error('Playback error:', error);
+                    this.showError('Unable to play track preview.');
+                });
             }
+        } else {
+            // Different track - start playing new track
+            audio.src = track.previewUrl;
+            this.currentlyPlayingTrack = track;
             audio.play().catch(error => {
                 console.error('Playback error:', error);
                 this.showError('Unable to play track preview.');
             });
         }
         
-        this.updatePlayButtonStates();
+        this.updateControlButtonStates();
     }
 
     /**
-     * Update play button states
+     * Stop a track
      */
-    updatePlayButtonStates() {
+    stopTrack(track) {
+        const audio = this.elements.audioPlayer;
+        
+        if (this.currentlyPlayingTrack?.id === track.id) {
+            audio.pause();
+            audio.currentTime = 0;
+            this.currentlyPlayingTrack = null;
+            this.isPlaying = false;
+            this.audioVisualizer.stop();
+        }
+        
+        this.updateControlButtonStates();
+    }
+
+    /**
+     * Toggle track playback (legacy function for backward compatibility)
+     */
+    toggleTrack(track) {
+        this.togglePlayPause(track);
+    }
+
+    /**
+     * Update control button states
+     */
+    updateControlButtonStates() {
         const items = this.elements.playlistContainer.querySelectorAll('.playlist-item');
         items.forEach(item => {
-            item.classList.remove('playing');
+            item.classList.remove('playing', 'paused');
+            const playPauseButton = item.querySelector('.play-pause-button');
+            const stopButton = item.querySelector('.stop-button');
+            
+            if (playPauseButton) {
+                playPauseButton.innerHTML = '▶️';
+                playPauseButton.title = 'Play';
+                playPauseButton.classList.remove('playing');
+            }
+            if (stopButton) {
+                stopButton.disabled = true;
+                stopButton.style.opacity = '0.5';
+            }
         });
         
-        if (this.currentlyPlayingTrack && this.isPlaying) {
+        if (this.currentlyPlayingTrack) {
             const playingItem = Array.from(items).find(item => {
                 const trackName = item.querySelector('.track-name').textContent;
                 return trackName === this.currentlyPlayingTrack.name;
             });
+            
             if (playingItem) {
                 playingItem.classList.add('playing');
-                const playIcon = playingItem.querySelector('.play-icon');
-                if (playIcon) {
-                    playIcon.classList.add('paused');
+                const playPauseButton = playingItem.querySelector('.play-pause-button');
+                const stopButton = playingItem.querySelector('.stop-button');
+                
+                if (playPauseButton) {
+                    if (this.isPlaying) {
+                        playPauseButton.innerHTML = '⏸️';
+                        playPauseButton.title = 'Pause';
+                        playPauseButton.classList.add('playing');
+                        playingItem.classList.add('playing');
+                        playingItem.classList.remove('paused');
+                    } else {
+                        playPauseButton.innerHTML = '▶️';
+                        playPauseButton.title = 'Resume';
+                        playingItem.classList.add('paused');
+                        playingItem.classList.remove('playing');
+                    }
+                }
+                
+                if (stopButton) {
+                    stopButton.disabled = false;
+                    stopButton.style.opacity = '1';
                 }
             }
-        } else {
-            // Update all play icons to show play state
-            items.forEach(item => {
-                const playIcon = item.querySelector('.play-icon');
-                if (playIcon) {
-                    playIcon.classList.remove('paused');
-                }
-            });
         }
+    }
+
+    /**
+     * Update play button states (legacy function for backward compatibility)
+     */
+    updatePlayButtonStates() {
+        this.updateControlButtonStates();
     }
 
     /**
@@ -340,6 +473,13 @@ class MusicRecommendationApp {
         this.currentlyPlayingTrack = null;
         this.isPlaying = false;
         this.audioVisualizer.stop();
+        this.updateControlButtonStates();
+
+        // Hide Spotify player
+        const playerSection = document.getElementById('spotify-player-section');
+        if (playerSection) {
+            playerSection.classList.remove('active');
+        }
     }
 
     /**
