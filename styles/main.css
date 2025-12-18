@@ -552,6 +552,72 @@ body {
         -8px -8px 16px rgba(255, 255, 255, 0.05);
 }
 
+.custom-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+}
+
+.control-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 18px;
+    color: var(--text-primary);
+}
+
+.control-btn:hover {
+    background: rgba(29, 185, 84, 0.2);
+    border-color: #1db954;
+    transform: scale(1.1);
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+.volume-control {
+    width: 120px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-tertiary);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.volume-control::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #1db954;
+    cursor: pointer;
+    border: 2px solid var(--bg-primary);
+}
+
+.volume-control::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #1db954;
+    cursor: pointer;
+    border: 2px solid var(--bg-primary);
+}
+
 .spotify-player-title {
     color: var(--text-primary);
     font-size: 1.2rem;
@@ -582,7 +648,7 @@ body {
     right: 0;
     background: rgba(29, 185, 84, 0.9);
     color: white;
-    padding: 8px;
+    padding: 12px;
     text-align: center;
     font-size: 0.9rem;
     font-weight: 600;
@@ -590,14 +656,23 @@ body {
     transition: all 0.3s ease;
     cursor: pointer;
     border-radius: 0 0 var(--radius-md) var(--radius-md);
+    backdrop-filter: blur(10px);
 }
 
 .album-cover-container:hover .spotify-overlay {
     opacity: 1;
+    transform: translateY(-2px);
 }
 
 .playlist-item.playing .spotify-overlay {
     background: rgba(29, 185, 84, 1);
     opacity: 1;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 

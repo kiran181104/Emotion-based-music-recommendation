@@ -234,7 +234,7 @@ class MusicRecommendationApp {
         // Create Spotify play overlay
         const spotifyOverlay = document.createElement('div');
         spotifyOverlay.className = 'spotify-overlay';
-        spotifyOverlay.innerHTML = '▶️ Play on Spotify';
+        spotifyOverlay.innerHTML = '🎵 Play with Full Controls';
         spotifyOverlay.addEventListener('click', (e) => {
             e.stopPropagation();
             this.playOnSpotify(track);
@@ -294,6 +294,42 @@ class MusicRecommendationApp {
             const container = document.createElement('div');
             container.className = 'spotify-player-container';
 
+            // Create custom controls
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'custom-controls';
+
+            const prevButton = document.createElement('button');
+            prevButton.className = 'control-btn prev-btn';
+            prevButton.innerHTML = '⏮️';
+            prevButton.title = 'Previous Song';
+            prevButton.addEventListener('click', () => this.playPreviousSong());
+
+            const playPauseButton = document.createElement('button');
+            playPauseButton.className = 'control-btn play-pause-btn';
+            playPauseButton.innerHTML = '▶️';
+            playPauseButton.title = 'Play/Pause';
+            playPauseButton.addEventListener('click', () => this.togglePlayerPlayback());
+
+            const nextButton = document.createElement('button');
+            nextButton.className = 'control-btn next-btn';
+            nextButton.innerHTML = '⏭️';
+            nextButton.title = 'Next Song';
+            nextButton.addEventListener('click', () => this.playNextSong());
+
+            const volumeControl = document.createElement('input');
+            volumeControl.type = 'range';
+            volumeControl.className = 'volume-control';
+            volumeControl.min = '0';
+            volumeControl.max = '100';
+            volumeControl.value = '50';
+            volumeControl.title = 'Volume';
+            volumeControl.addEventListener('input', (e) => this.setVolume(e.target.value));
+
+            controlsDiv.appendChild(prevButton);
+            controlsDiv.appendChild(playPauseButton);
+            controlsDiv.appendChild(nextButton);
+            controlsDiv.appendChild(volumeControl);
+
             const title = document.createElement('h3');
             title.className = 'spotify-player-title';
             title.textContent = `Now Playing: ${track.name} by ${track.artist}`;
@@ -302,6 +338,7 @@ class MusicRecommendationApp {
             embedContainer.id = 'spotify-embed-container';
             embedContainer.className = 'spotify-embed-container';
 
+            container.appendChild(controlsDiv);
             container.appendChild(title);
             container.appendChild(embedContainer);
             section.appendChild(container);
@@ -340,6 +377,52 @@ class MusicRecommendationApp {
         iframe.loading = 'lazy';
 
         embedContainer.appendChild(iframe);
+    }
+
+    /**
+     * Play previous song in playlist
+     */
+    playPreviousSong() {
+        if (!this.currentlyPlayingTrack || !this.currentPlaylist.length) return;
+
+        const currentIndex = this.currentPlaylist.findIndex(track => track.id === this.currentlyPlayingTrack.id);
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : this.currentPlaylist.length - 1;
+        const prevTrack = this.currentPlaylist[prevIndex];
+
+        this.playOnSpotify(prevTrack);
+    }
+
+    /**
+     * Toggle playback (this would need Spotify Web Playback SDK for full control)
+     */
+    togglePlayerPlayback() {
+        // Note: Full play/pause control requires Spotify Web Playback SDK
+        // For now, we'll refresh the embed which should restart playback
+        if (this.currentlyPlayingTrack) {
+            this.createSpotifyEmbed(this.currentlyPlayingTrack);
+        }
+    }
+
+    /**
+     * Play next song in playlist
+     */
+    playNextSong() {
+        if (!this.currentlyPlayingTrack || !this.currentPlaylist.length) return;
+
+        const currentIndex = this.currentPlaylist.findIndex(track => track.id === this.currentlyPlayingTrack.id);
+        const nextIndex = currentIndex < this.currentPlaylist.length - 1 ? currentIndex + 1 : 0;
+        const nextTrack = this.currentPlaylist[nextIndex];
+
+        this.playOnSpotify(nextTrack);
+    }
+
+    /**
+     * Set volume (limited control with embed)
+     */
+    setVolume(volume) {
+        // Volume control is limited with iframe embeds
+        // This is mostly for UI feedback
+        console.log('Volume set to:', volume);
     }
 
     /**
