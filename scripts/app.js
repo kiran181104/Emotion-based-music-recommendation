@@ -270,6 +270,14 @@ class MusicRecommendationApp {
      * Play track on Spotify using embedded player
      */
     playOnSpotify(track) {
+        console.log('Playing track:', track); // Debug log
+
+        if (!track || !track.id) {
+            console.error('Invalid track object:', track);
+            this.showError('Unable to play this track. Invalid track data.');
+            return;
+        }
+
         // Update currently playing track
         this.currentlyPlayingTrack = track;
 
@@ -334,6 +342,10 @@ class MusicRecommendationApp {
             title.className = 'spotify-player-title';
             title.textContent = `Now Playing: ${track.name} by ${track.artist}`;
 
+            const instruction = document.createElement('p');
+            instruction.className = 'spotify-instruction';
+            instruction.textContent = '💡 Click the play button in the Spotify player below to start listening';
+
             const embedContainer = document.createElement('div');
             embedContainer.id = 'spotify-embed-container';
             embedContainer.className = 'spotify-embed-container';
@@ -352,8 +364,10 @@ class MusicRecommendationApp {
             const title = playerSection.querySelector('.spotify-player-title');
             title.textContent = `Now Playing: ${track.name} by ${track.artist}`;
 
-            const embedContainer = playerSection.querySelector('#spotify-embed-container');
-            embedContainer.innerHTML = ''; // Clear previous embed
+            const instruction = playerSection.querySelector('.spotify-instruction');
+            if (instruction) {
+                instruction.textContent = '💡 Click the play button in the Spotify player below to start listening';
+            }
         }
 
         // Create Spotify embed iframe
@@ -365,18 +379,69 @@ class MusicRecommendationApp {
      */
     createSpotifyEmbed(track) {
         const embedContainer = document.getElementById('spotify-embed-container');
-        if (!embedContainer) return;
+        if (!embedContainer) {
+            console.error('Spotify embed container not found');
+            return;
+        }
+
+        console.log('Creating Spotify embed for track:', track.id); // Debug log
+
+        // Clear any existing iframe
+        embedContainer.innerHTML = '';
+
+        // Show loading indicator
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'spotify-loading';
+        loadingDiv.innerHTML = `
+            <div class="loading-spinner"></div>
+            <p>Loading Spotify player...</p>
+        `;
+        embedContainer.appendChild(loadingDiv);
 
         // Create iframe for Spotify embed
         const iframe = document.createElement('iframe');
-        iframe.src = `https://open.spotify.com/embed/track/${track.id}?utm_source=generator&theme=0`;
+        const embedUrl = `https://open.spotify.com/embed/track/${track.id}?utm_source=generator&theme=0&show_cover=true`;
+        console.log('Embed URL:', embedUrl); // Debug log
+
+        iframe.src = embedUrl;
         iframe.width = '100%';
         iframe.height = '352';
         iframe.frameBorder = '0';
         iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
         iframe.loading = 'lazy';
 
+        // Add error handling
+        iframe.onerror = function() {
+            console.error('Failed to load Spotify embed for track:', track.id);
+            // Show fallback link
+            embedContainer.innerHTML = '';
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.className = 'embed-fallback';
+            fallbackDiv.innerHTML = `
+                <p>Unable to load Spotify player. Try opening directly:</p>
+                <a href="${track.externalUrl || `https://open.spotify.com/track/${track.id}`}" target="_blank" class="spotify-fallback-link">
+                    🎵 Open "${track.name}" in Spotify
+                </a>
+            `;
+            embedContainer.appendChild(fallbackDiv);
+        };
+
+        iframe.onload = function() {
+            console.log('Spotify embed loaded successfully for track:', track.id);
+            // Remove loading indicator
+            const loadingDiv = embedContainer.querySelector('.spotify-loading');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        };
+
         embedContainer.appendChild(iframe);
+
+        // Add direct link as additional option
+        const directLinkDiv = document.createElement('div');
+        directLinkDiv.className = 'direct-link-container';
+        directLinkDiv.innerHTML = `<a href="${track.externalUrl || `https://open.spotify.com/track/${track.id}`}" target="_blank" class="spotify-direct-link">🔗 Open Full Track in Spotify Web Player</a>`;
+        embedContainer.appendChild(directLinkDiv);
     }
 
     /**
