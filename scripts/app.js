@@ -180,7 +180,7 @@ class MusicRecommendationApp {
                 this.playlistCache.set(emotion, playlist);
                 this.displayPlaylist(playlist);
             } else {
-                this.showError('No tracks found for this emotion. Please try another one.');
+                this.showError('Unable to load songs right now. This might be due to a temporary connection issue. Please try again in a moment.');
             }
         } catch (error) {
             console.error('Error fetching playlist:', error);

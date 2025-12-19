@@ -234,28 +234,50 @@ class SpotifyAPI {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Token exchange error:', errorData);
+                let errorMessage = 'Token exchange failed';
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error_description || errorData.error || errorMessage;
+                    } else {
+                        const textContent = await response.text();
+                        errorMessage = `HTTP ${response.status}: ${textContent.substring(0, 200)}`;
+                    }
+                } catch (parseError) {
+                    console.warn('Failed to parse token exchange error:', parseError);
+                    errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                }
+                console.error('Token exchange error:', errorMessage);
                 return {
                     success: false,
-                    error: errorData.error || 'token_exchange_failed',
-                    errorDescription: errorData.error_description || 'Failed to exchange code for token.'
+                    error: 'token_exchange_failed',
+                    errorDescription: errorMessage
                 };
             }
 
-            const data = await response.json();
-            this.accessToken = data.access_token;
-            // Store token with expiry time (subtract 60 seconds for safety margin)
-            this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-            localStorage.setItem('spotify_access_token', data.access_token);
-            localStorage.setItem('spotify_token_expiry', this.tokenExpiry.toString());
-            
-            // Store refresh token if provided (for future use)
-            if (data.refresh_token) {
-                localStorage.setItem('spotify_refresh_token', data.refresh_token);
-            }
+            try {
+                const data = await response.json();
+                this.accessToken = data.access_token;
+                // Store token with expiry time (subtract 60 seconds for safety margin)
+                this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+                localStorage.setItem('spotify_access_token', data.access_token);
+                localStorage.setItem('spotify_token_expiry', this.tokenExpiry.toString());
+                
+                // Store refresh token if provided (for future use)
+                if (data.refresh_token) {
+                    localStorage.setItem('spotify_refresh_token', data.refresh_token);
+                }
 
-            return { success: true };
+                return { success: true };
+            } catch (jsonError) {
+                console.error('Failed to parse token response:', jsonError);
+                return {
+                    success: false,
+                    error: 'invalid_token_response',
+                    errorDescription: 'Received invalid response from Spotify token endpoint.'
+                };
+            }
         } catch (error) {
             console.error('Token exchange exception:', error);
             return {
@@ -331,11 +353,43 @@ class SpotifyAPI {
             }
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error?.message || `API Error: ${response.status}`);
+                let errorMessage = `API Error: ${response.status}`;
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const error = await response.json();
+                        errorMessage = error.error?.message || errorMessage;
+                    } else {
+                        // If not JSON, try to get text content for better error message
+                        const textContent = await response.text();
+                        errorMessage = textContent.substring(0, 200) + (textContent.length > 200 ? '...' : '');
+                    }
+                } catch (parseError) {
+                    console.warn('Failed to parse error response:', parseError);
+                    errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
             }
 
-            return await response.json();
+            // Check if response is actually JSON before parsing
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                try {
+                    return await response.json();
+                } catch (jsonError) {
+                    console.error('Failed to parse JSON response:', jsonError);
+                    console.error('Response headers:', Object.fromEntries(response.headers.entries()));
+                    const textContent = await response.text();
+                    console.error('Raw response content:', textContent.substring(0, 500));
+                    throw new Error(`Invalid JSON response from Spotify API: ${jsonError.message}`);
+                }
+            } else {
+                // If not JSON, this might be an error page
+                const textContent = await response.text();
+                console.error('Unexpected non-JSON response:', textContent.substring(0, 500));
+                console.error('Response headers:', Object.fromEntries(response.headers.entries()));
+                throw new Error(`Expected JSON response but got ${contentType || 'unknown content type'}: ${textContent.substring(0, 100)}...`);
+            }
         } catch (error) {
             console.error('Spotify API Error:', error);
             throw error;
@@ -409,6 +463,7 @@ class SpotifyAPI {
                     }
                 } catch (error) {
                     console.warn(`Artist search failed for ${artist}:`, error);
+                    // Continue with other artists instead of failing completely
                 }
             }
 
@@ -440,7 +495,9 @@ class SpotifyAPI {
             return allTracks;
         } catch (error) {
             console.error('Search error:', error);
-            throw error;
+            // Return empty array instead of throwing to prevent app crashes
+            console.warn('Returning empty playlist due to API error');
+            return [];
         }
     }
 
