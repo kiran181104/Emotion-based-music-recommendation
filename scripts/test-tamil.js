@@ -8,7 +8,7 @@ async function testTamilFiltering() {
     console.log('Testing Tamil song filtering...');
 
     // Test each emotion
-    const emotions = ['happy', 'sad', 'chill', 'energetic', 'romantic'];
+    const emotions = ['happy', 'sad', 'chill', 'energetic', 'romantic', 'calm', 'angry', 'motivation'];
 
     for (const emotion of emotions) {
         console.log(`\n--- Testing ${emotion} emotion ---`);

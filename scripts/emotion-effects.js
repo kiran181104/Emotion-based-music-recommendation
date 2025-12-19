@@ -54,8 +54,8 @@ class EmotionEffects {
             case 'angry':
                 this.initAngryEffect();
                 break;
-            case 'nostalgic':
-                this.initNostalgicEffect();
+            case 'motivation':
+                this.initMotivationEffect();
                 break;
             default:
                 return;
@@ -353,33 +353,53 @@ class EmotionEffects {
         });
     }
 
-    // ========== NOSTALGIC: Gentle Stars ==========
-    initNostalgicEffect() {
-        for (let i = 0; i < 60; i++) {
+    // ========== MOTIVATION: Rising Energy Particles ==========
+    initMotivationEffect() {
+        for (let i = 0; i < 40; i++) {
             this.particles.push({
                 x: Math.random() * this.canvas.width,
-                y: Math.random() * this.canvas.height,
-                size: Math.random() * 2 + 1,
-                twinkle: Math.random() * Math.PI * 2,
-                speed: Math.random() * 0.02 + 0.01
+                y: this.canvas.height + Math.random() * 100,
+                size: Math.random() * 4 + 2,
+                speedY: -(Math.random() * 2 + 1),
+                speedX: (Math.random() - 0.5) * 0.5,
+                life: Math.random() * 100 + 50,
+                maxLife: Math.random() * 100 + 50,
+                color: Math.random() > 0.5 ? '#ff6b35' : '#f7931e'
             });
         }
     }
 
-    updateNostalgicEffect() {
-        this.particles.forEach(p => {
-            p.twinkle += p.speed;
+    updateMotivationEffect() {
+        this.particles.forEach((p, index) => {
+            p.y += p.speedY;
+            p.x += p.speedX;
+            p.life--;
+
+            // Reset particle when it goes off screen or dies
+            if (p.y < -10 || p.life <= 0) {
+                p.x = Math.random() * this.canvas.width;
+                p.y = this.canvas.height + Math.random() * 50;
+                p.life = p.maxLife;
+                p.speedY = -(Math.random() * 2 + 1);
+                p.speedX = (Math.random() - 0.5) * 0.5;
+            }
         });
     }
 
-    drawNostalgicEffect() {
+    drawMotivationEffect() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.particles.forEach(p => {
-            const opacity = (Math.sin(p.twinkle) + 1) / 2;
-            this.ctx.fillStyle = `rgba(102, 126, 234, ${opacity * 0.8})`;
+            const opacity = p.life / p.maxLife;
+            this.ctx.fillStyle = p.color.replace(')', `, ${opacity * 0.8})`).replace('rgb', 'rgba');
             this.ctx.beginPath();
             this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             this.ctx.fill();
+
+            // Add glow effect
+            this.ctx.shadowColor = p.color;
+            this.ctx.shadowBlur = 10;
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
         });
     }
 
@@ -393,7 +413,7 @@ class EmotionEffects {
             case 'romantic': this.updateRomanticEffect(); break;
             case 'calm': this.updateCalmEffect(); break;
             case 'angry': this.updateAngryEffect(); break;
-            case 'nostalgic': this.updateNostalgicEffect(); break;
+            case 'motivation': this.updateMotivationEffect(); break;
         }
     }
 
@@ -406,7 +426,7 @@ class EmotionEffects {
             case 'romantic': this.drawRomanticEffect(); break;
             case 'calm': this.drawCalmEffect(); break;
             case 'angry': this.drawAngryEffect(); break;
-            case 'nostalgic': this.drawNostalgicEffect(); break;
+            case 'motivation': this.drawMotivationEffect(); break;
         }
     }
 }

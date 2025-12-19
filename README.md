@@ -4,7 +4,7 @@ A visually rich, interactive web application that recommends music based on your
 
 ## ✨ Features
 
-- **8 Emotion Categories**: Happy, Sad, Chill, Energetic, Romantic, Calm, Angry, and Nostalgic
+- **8 Emotion Categories**: Happy, Sad, Chill, Energetic, Romantic, Calm, Angry, and Motivation
 - **Spotify Integration**: Real music recommendations powered by Spotify Web API
 - **Audio Visualizer**: Real-time waveform visualization with emotion-specific color schemes
 - **Animated Background Effects**: Unique canvas-based animations for each emotion
@@ -136,7 +136,7 @@ Each emotion triggers unique background animations:
 - **Romantic**: Floating hearts
 - **Calm**: Soft glow waves
 - **Angry**: Scattered particles
-- **Nostalgic**: Twinkling stars
+- **Motivation**: Twinkling stars
 
 ## 🎵 How It Works
 

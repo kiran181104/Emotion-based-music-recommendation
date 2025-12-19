@@ -26,7 +26,7 @@ class AudioVisualizer {
             romantic: { primary: '#ff9a9e', secondary: '#fecfef', bg: 'rgba(255, 154, 158, 0.1)' },
             calm: { primary: '#a8edea', secondary: '#fed6e3', bg: 'rgba(168, 237, 234, 0.1)' },
             angry: { primary: '#ff6b6b', secondary: '#ee5a6f', bg: 'rgba(255, 107, 107, 0.1)' },
-            nostalgic: { primary: '#667eea', secondary: '#764ba2', bg: 'rgba(102, 126, 234, 0.1)' }
+            motivation: { primary: '#ff6b35', secondary: '#f7931e', bg: 'rgba(255, 107, 53, 0.1)' }
         };
         
         this.defaultColors = { primary: '#667eea', secondary: '#764ba2', bg: 'rgba(102, 126, 234, 0.1)' };

@@ -56,7 +56,7 @@ class SpotifyAPI {
             romantic: 'tamil love romantic couple wedding',
             calm: 'tamil meditation peaceful relaxation yoga',
             angry: 'tamil angry frustration rage intense',
-            nostalgic: 'tamil old songs classic vintage memories'
+            motivation: 'tamil motivation inspirational success achievement'
         };
     }
 
@@ -357,7 +357,7 @@ class SpotifyAPI {
             romantic: ['ar rahman', 'ilayaraja', 'yuvan shankar raja', 'sundar c'],
             calm: ['ar rahman', 'ilayaraja', 'yuvan shankar raja'],
             angry: ['anirudh ravichander', 'gv prakash', 'dhanush'],
-            nostalgic: ['ilayaraja', 'ar rahman', 'sundar c', 'yuvan shankar raja']
+            motivation: ['anirudh ravichander', 'gv prakash', 'dhanush', 'sundar c']
         };
 
         try {

@@ -10,7 +10,7 @@
     --color-romantic: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
     --color-calm: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
     --color-angry: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-    --color-nostalgic: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --color-motivation: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
 
     /* Solid colors for specific uses */
     --color-happy-solid: #f5576c;
@@ -20,7 +20,7 @@
     --color-romantic-solid: #ff9a9e;
     --color-calm-solid: #a8edea;
     --color-angry-solid: #ff6b6b;
-    --color-nostalgic-solid: #667eea;
+    --color-motivation-solid: #ff6b35;
 
     /* Base Colors */
     --bg-primary: #0a0e27;
@@ -252,9 +252,9 @@ body {
     background: var(--color-angry);
 }
 
-.emotion-card[data-emotion="nostalgic"]:hover::before,
-.emotion-card[data-emotion="nostalgic"].active::before {
-    background: var(--color-nostalgic);
+.emotion-card[data-emotion="motivation"]:hover::before,
+.emotion-card[data-emotion="motivation"].active::before {
+    background: var(--color-motivation);
 }
 
 /* ============================================
