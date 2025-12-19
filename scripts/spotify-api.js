@@ -56,7 +56,7 @@ class SpotifyAPI {
             romantic: 'tamil love romantic couple wedding',
             calm: 'tamil meditation peaceful relaxation yoga',
             angry: 'tamil angry frustration rage intense',
-            motivation: 'tamil motivation inspirational success achievement'
+            motivation: 'tamil motivation workout success achievement inspirational strength power'
         };
     }
 
@@ -357,7 +357,7 @@ class SpotifyAPI {
             romantic: ['ar rahman', 'ilayaraja', 'yuvan shankar raja', 'sundar c'],
             calm: ['ar rahman', 'ilayaraja', 'yuvan shankar raja'],
             angry: ['anirudh ravichander', 'gv prakash', 'dhanush'],
-            motivation: ['anirudh ravichander', 'gv prakash', 'dhanush', 'sundar c']
+            motivation: ['anirudh ravichander', 'd imman', 'gv prakash', 'hip hop tamizha']
         };
 
         try {
@@ -373,6 +373,10 @@ class SpotifyAPI {
             const tamilEmotionTracks = emotionTracks.filter(track => this.isTamilSong(track));
             for (const track of tamilEmotionTracks) {
                 if (!seenIds.has(track.id) && allTracks.length < limit) {
+                    // Additional filtering for motivation to exclude romantic songs
+                    if (emotion === 'motivation' && this.isRomanticSong(track)) {
+                        continue; // Skip romantic songs for motivation
+                    }
                     seenIds.add(track.id);
                     allTracks.push(track);
                 }
@@ -384,7 +388,10 @@ class SpotifyAPI {
                 if (allTracks.length >= limit) break;
 
                 try {
-                    const artistQuery = `${artist} tamil`;
+                    // Special handling for motivation to avoid romantic songs
+                    const artistQuery = emotion === 'motivation' 
+                        ? `${artist} tamil motivation workout success achievement` 
+                        : `${artist} tamil`;
                     const artistEndpoint = `/search?q=${encodeURIComponent(artistQuery)}&type=track&limit=8&market=IN`;
                     const artistData = await this.apiRequest(artistEndpoint);
                     const artistTracks = this.formatTrackResults(artistData.tracks.items);
@@ -392,6 +399,10 @@ class SpotifyAPI {
                     // Filter for Tamil songs and add to results
                     for (const track of artistTracks) {
                         if (this.isTamilSong(track) && !seenIds.has(track.id) && allTracks.length < limit) {
+                            // Additional filtering for motivation to exclude romantic songs
+                            if (emotion === 'motivation' && this.isRomanticSong(track)) {
+                                continue; // Skip romantic songs for motivation
+                            }
                             seenIds.add(track.id);
                             allTracks.push(track);
                         }
@@ -413,6 +424,10 @@ class SpotifyAPI {
 
                     for (const track of broadTracks) {
                         if (this.isTamilSong(track) && !seenIds.has(track.id) && allTracks.length < limit) {
+                            // Additional filtering for motivation to exclude romantic songs
+                            if (emotion === 'motivation' && this.isRomanticSong(track)) {
+                                continue; // Skip romantic songs for motivation
+                            }
                             seenIds.add(track.id);
                             allTracks.push(track);
                         }
@@ -466,6 +481,22 @@ class SpotifyAPI {
         // For tracks that might be Tamil but don't have explicit indicators,
         // check if they appear in Tamil artist searches
         return false;
+    }
+
+    /**
+     * Check if a track appears to be romantic (to exclude from motivation)
+     */
+    isRomanticSong(track) {
+        const text = (track.name + ' ' + track.artist + ' ' + track.album).toLowerCase();
+
+        // Romantic keywords to exclude from motivation
+        const romanticIndicators = [
+            'love', 'romantic', 'kiss', 'heart', 'couple', 'wedding', 'marriage',
+            'lover', 'darling', 'baby', 'sweet', 'beautiful', 'girl', 'boy',
+            'அன்பு', 'காதல்', 'மனைவி', 'கணவன்', 'செல்லம்', 'கண்ணம்மா'
+        ];
+
+        return romanticIndicators.some(indicator => text.includes(indicator));
     }
 
     /**
