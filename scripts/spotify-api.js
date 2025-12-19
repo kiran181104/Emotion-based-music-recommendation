@@ -341,10 +341,17 @@ class SpotifyAPI {
         };
 
         try {
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
             const response = await fetch(url, {
                 ...options,
-                headers
+                headers,
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             if (response.status === 401) {
                 // Token expired
@@ -392,6 +399,12 @@ class SpotifyAPI {
             }
         } catch (error) {
             console.error('Spotify API Error:', error);
+            
+            // Handle timeout errors specifically
+            if (error.name === 'AbortError') {
+                throw new Error('Request timed out. Please check your internet connection and try again.');
+            }
+            
             throw error;
         }
     }

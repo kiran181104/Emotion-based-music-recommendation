@@ -172,19 +172,35 @@ class MusicRecommendationApp {
                 return;
             }
             
-            // Fetch from API
-            const playlist = await this.spotifyAPI.searchByEmotion(emotion, 20);
+            // Fetch from API with retry logic
+            let playlist = await this.spotifyAPI.searchByEmotion(emotion, 20);
+            
+            // If first attempt fails, try once more
+            if (!playlist || playlist.length === 0) {
+                console.log('First attempt failed, retrying...');
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+                playlist = await this.spotifyAPI.searchByEmotion(emotion, 20);
+            }
             
             if (playlist && playlist.length > 0) {
                 // Cache the playlist
                 this.playlistCache.set(emotion, playlist);
                 this.displayPlaylist(playlist);
             } else {
-                this.showError('Unable to load songs right now. This might be due to a temporary connection issue. Please try again in a moment.');
+                // Show a more helpful message with retry option
+                this.showErrorWithRetry('Unable to load songs right now. Please check your internet connection and try again.', emotion);
             }
         } catch (error) {
             console.error('Error fetching playlist:', error);
-            this.showError(error.message || 'Failed to fetch playlist. Please try again.');
+            
+            // Check if it's a network error
+            const isNetworkError = !navigator.onLine || error.message.includes('fetch') || error.message.includes('network');
+            
+            if (isNetworkError) {
+                this.showErrorWithRetry('Network connection issue. Please check your internet connection and try again.', emotion);
+            } else {
+                this.showError(error.message || 'Failed to fetch playlist. Please try again.');
+            }
         } finally {
             this.showLoading(false);
         }
@@ -638,6 +654,51 @@ class MusicRecommendationApp {
     showError(message) {
         this.elements.errorMessage.textContent = message;
         this.elements.errorMessage.style.display = 'block';
+    }
+
+    /**
+     * Show error message with retry option
+     */
+    showErrorWithRetry(message, emotion) {
+        // Check if we're on mobile and add network-specific advice
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let enhancedMessage = message;
+        
+        if (isMobile) {
+            enhancedMessage += ' Make sure you have a stable internet connection.';
+        }
+
+        const errorContainer = this.elements.errorMessage;
+        errorContainer.innerHTML = `
+            <div style="text-align: center;">
+                <p style="margin: 0 0 1rem 0; color: #ff6b6b; line-height: 1.4;">${enhancedMessage}</p>
+                <button id="retry-button" style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 0.5rem;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    min-height: 44px;
+                    -webkit-tap-highlight-color: transparent;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                ">🔄 Try Again</button>
+            </div>
+        `;
+        errorContainer.style.display = 'block';
+
+        // Add retry functionality
+        const retryButton = document.getElementById('retry-button');
+        if (retryButton) {
+            retryButton.addEventListener('click', () => {
+                this.hideError();
+                this.showLoading(true);
+                this.loadEmotionPlaylist(emotion);
+            });
+        }
     }
 
     /**
